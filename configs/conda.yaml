@@ -1,0 +1,12 @@
+name: deeplearning
+channels:
+  - bioconda
+  - conda-forge
+  - mamba
+dependencies:
+  - python = 3.10.6
+  - tensorflow = 2.10.0 # MUST MUST MUST be =2 bc of tf.DataSet, change at own risk
+  - numpy
+  - pandas
+  - jellyfish
+  - samtools

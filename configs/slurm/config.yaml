@@ -1,0 +1,30 @@
+cores: 64
+configfile: "config.yaml"
+rerun-incomplete: true
+jobname: "{name}.{jobid}.snakejob.sh"
+use-conda: true
+conda-frontend: 'mamba'
+use-singularity: true
+show-failed-logs: true
+
+cluster: 
+  sbatch 
+    --account=mutationalscanning
+    --mem-per-cpu={resources.mem}
+    --cpus-per-task={threads}
+    --error=logs/{rule}.%j.err
+    --output=logs/{rule}.%j.out
+    --gres="gpu:{resources.gpus}"
+    --partition={resources.partition}
+
+cluster-cancel: 'scancel'
+
+default-resources:
+  - partition="normal"
+  - threads=1
+  - runtime="04:00:00"
+  - mem=16000
+  - partition="normal"
+  - gpus=0
+
+
