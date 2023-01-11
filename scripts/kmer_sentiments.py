@@ -5,7 +5,7 @@ import sys
 import datetime
 import os
 
-data = tf.data.Dataset.load("possible_mutations") #os.path.dirname(snakemake.input[0]))#"tokenized_5mer.tf")#data_path)
+data = tf.data.Dataset.load(os.path.dirname(snakemake.input[0]))#"tokenized_5mer.tf")#data_path)
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 tf.debugging.set_log_device_placement(True)
 vocab_sz = 25000#14162
@@ -40,7 +40,7 @@ del data
 nepochs = 3
 model.fit(train, epochs=nepochs, validation_data=val)
 
-model_name = "possible_mutations_model" #snakemake.params[0]
+model_name = snakemake.params[0]
 model.save(model_name)
 
 with open(model_name + ".val.loss","w") as f:
