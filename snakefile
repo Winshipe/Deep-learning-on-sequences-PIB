@@ -1,7 +1,7 @@
 configfile: "config.yaml"
 
 import math
-vocab_k = int(config["kmer size"])
+vocab_k = 7 #int(config["kmer size"])
 vocab_context_start = int(math.ceil(float(vocab_k/2)))
 
 import os
@@ -68,28 +68,27 @@ rule separate_good_bad:
     #script:
     #    "scripts/separate_good_bad_small_subs.py" #"scripts/separate_good_bad.py"
 
-#rule generate_vocab:
+rule generate_vocab:
 # if we're doing more traditional NLP  then we need to assign tokens to each kmer
 # including padding (given by #)
 # eg AGGAG -> 1 , AGGAT -> 2, #AGGA -> 3 and so on...
 # so here we build a list of k-mers that we've found (those outside this list will be given an out-of-vocabulary token instead)
-#    input:
-#        good = "workspace/{nn_id}.good.txt",
-#    output:
-#        "workspace/{nn_id}.vocab.txt"
-#    conda: "configs/conda.yaml"
-#    threads: 16
-#    shell:
-#        """
-#        awk '{{print ">" NR "\\n" $1 "\\n" $2 "\\n"}}' {input.good} > temp.fa  
-#        for (( i = {vocab_context_start}; i < {vocab_k} +1 ; i++ ))
-#            do
-#                jellyfish count -m $i -s 1G -t 16 -o output temp.fa
-#                jellyfish dump output -c >> {output[0]}
-#            done
-#        rm temp.fa output
-#        mv {input.good}.temp {input.good}
-# """
+    input:
+        goodbad = "workspace/{nn_id}.goodbad.txt",
+    output:
+        "workspace/{nn_id}.vocab.txt"
+    conda: "configs/conda.yaml"
+    threads: 16
+    shell:
+        """
+        awk '{{print ">" NR "\\n" $1 "\\n" $2 "\\n"}}' {input.goodbad} > temp.fa  
+        for (( i = {vocab_context_start}; i < {vocab_k} +1 ; i++ ))
+            do
+                jellyfish count -m $i -s 1G -t 16 -o output temp.fa
+                jellyfish dump output -c >> {output[0]}
+            done
+        rm temp.fa output
+ """
 
         
 rule prepare_sequences_token:
@@ -101,13 +100,15 @@ rule prepare_sequences_token:
         "workspace/{nn_id}_data/dataset_spec.pb" # really we need the whole folder but this file is always here in TensorFlow v2.  Woe unto Google if they change it!
         #directory("workspace/{nn_id}_data") #nicer but difficult to put into rule all
     params:
-        k = config["kmer size"]
+        k = vocab_k #config["kmer size"]
     conda: "configs/conda.yaml"
     resources:
         gpus=1,
-        partition="gpu"
+        partition="gpu",
+        mem=32000
     script:
-        "scripts/seq_to_1hot_chars.py" #if doing tokens use tokenize_sequence.py # can also use seq_to_1hot_chars.py if using some sort of char based network
+        "scripts/tokenize_sequence.py"
+        #"scripts/seq_to_1hot_chars.py" #if doing tokens use tokenize_sequence.py # can also use seq_to_1hot_chars.py if using some sort of char based network
 # method 1, kmer tokenization
 # AAA -> 1
 # AAT -> 2 
@@ -138,5 +139,4 @@ rule train_model:
     threads: 8
     script:
         "scripts/kmer_sentiments.py" # can also use cnn_accuracy.py here
-
 
